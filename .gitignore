@@ -1,0 +1,4 @@
+x64/**/*.*
+TestScreenShot/*.png
+TqkLibraryScrcpyPython/x64/**/*.*
+__pycache__
