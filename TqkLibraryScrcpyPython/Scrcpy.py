@@ -191,7 +191,7 @@ class Scrcpy(IScrcpy):
         # Chạy trong một luồng riêng (tương đương ThreadPool.QueueUserWorkItem)
         def run_disconnect():
             self.Stop()
-            self.OnDisconnect.Fire()        
+            self.OnDisconnect.Fire(self)
         threading.Thread(target=run_disconnect).start()
     
     def _control_on_clipboard_received(self, control, data):
