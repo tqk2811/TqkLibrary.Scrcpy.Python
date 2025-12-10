@@ -111,13 +111,13 @@ class ScrcpyControlHelper:
         if not text:
             raise ValueError("Text cannot be empty or None")
 
-        utf8_text = text.encode('utf-8')
+        ascii_text = text.encode('ascii')
         # C#: (type, (UInt32)utf8_text.Length, utf8_text)
         # length: UInt32 -> I, text: bytes -> s
         return ScrcpyControlHelper._write_control_message(
             ScrcpyControlType.TYPE_INJECT_TEXT,
-            ('I', len(utf8_text)),
-            ('s', utf8_text)
+            ('I', len(ascii_text)),
+            ('s', ascii_text)
         )
 
     @staticmethod
