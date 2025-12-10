@@ -165,5 +165,5 @@ if _avutil:
     av_frame_alloc.restype = c_void_p
     
     av_frame_free = _avutil.av_frame_free
-    av_frame_free.argtypes = []
+    av_frame_free.argtypes = [c_void_p]
     av_frame_free.restype = None
