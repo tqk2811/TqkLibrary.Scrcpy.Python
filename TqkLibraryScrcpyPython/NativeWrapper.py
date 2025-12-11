@@ -85,7 +85,7 @@ if _scrcpy_native_dll:
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
     # internal static extern bool ScrcpyGetScreenShot(IntPtr scrcpy, IntPtr buffer, int sizeInByte, int w, int h, int lineSize, SwsFlag swsFlag = SwsFlag.SWS_FAST_BILINEAR);
     ScrcpyGetScreenShot = _scrcpy_native_dll.ScrcpyGetScreenShot
-    ScrcpyGetScreenShot.argtypes = [c_void_p, c_void_p, c_int32, c_int32, c_int32, c_int32, c_uint32]
+    ScrcpyGetScreenShot.argtypes = [c_void_p, c_void_p, c_int32, c_int32, c_int32, c_int32, c_int32]
     ScrcpyGetScreenShot.restype = c_bool
 
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
