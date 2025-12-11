@@ -30,7 +30,8 @@ __all__ = [
     "ScrcpyControlType",
     "ScrcpyScreenPowerMode",
     "VideoSource",
-
+    "SwsFlag",
+    
     "ScrcpyMousePointerId",
 
     "Rectangle",

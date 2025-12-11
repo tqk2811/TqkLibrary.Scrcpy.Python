@@ -49,25 +49,25 @@ async def main():
 
         isControlSuccess: bool = False
         # isControlSuccess = scrcpy.Control.InjectText("test inject")
-        pointerId = random.randint(INT32_MIN, INT32_MAX) #hoặc ScrcpyMousePointerId.POINTER_ID_MOUSE
-        posTap = Rectangle(screenSize.Width/2,screenSize.Height/2,screenSize.Width,screenSize.Height)#giữa màn hình
-        isControlSuccess = scrcpy.Control.InjectTouchEvent(
-                action = AndroidMotionEventAction.ACTION_DOWN,
-                pointer_id = pointerId,
-                position = posTap,
-                pressure = 1.0,
-                buttons = AndroidMotionEventButton.BUTTON_PRIMARY,
-                action_button = AndroidMotionEventButton.BUTTON_PRIMARY
-            )
-        await asyncio.sleep(0.1)
-        isControlSuccess = scrcpy.Control.InjectTouchEvent(
-                action = AndroidMotionEventAction.ACTION_UP,
-                pointer_id = pointerId,
-                position = posTap,
-                pressure = 1.0,
-                buttons = AndroidMotionEventButton.BUTTON_PRIMARY,
-                action_button = AndroidMotionEventButton.BUTTON_PRIMARY
-            )
+        # pointerId = random.randint(INT32_MIN, INT32_MAX) #hoặc ScrcpyMousePointerId.POINTER_ID_MOUSE
+        # posTap = Rectangle(screenSize.Width/2,screenSize.Height/2,screenSize.Width,screenSize.Height)#giữa màn hình
+        # isControlSuccess = scrcpy.Control.InjectTouchEvent(
+        #         action = AndroidMotionEventAction.ACTION_DOWN,
+        #         pointer_id = pointerId,
+        #         position = posTap,
+        #         pressure = 1.0,
+        #         buttons = AndroidMotionEventButton.BUTTON_PRIMARY,
+        #         action_button = AndroidMotionEventButton.BUTTON_PRIMARY
+        #     )
+        # await asyncio.sleep(0.1)
+        # isControlSuccess = scrcpy.Control.InjectTouchEvent(
+        #         action = AndroidMotionEventAction.ACTION_UP,
+        #         pointer_id = pointerId,
+        #         position = posTap,
+        #         pressure = 1.0,
+        #         buttons = AndroidMotionEventButton.BUTTON_PRIMARY,
+        #         action_button = AndroidMotionEventButton.BUTTON_PRIMARY
+        #     )
         # isControlSuccess = scrcpy.Control.InjectScrollEvent(
         #         position = Rectangle(screenSize.Width/2,screenSize.Height/2,screenSize.Width,screenSize.Height),
         #         v_scroll = -1.0, #cuộn xuống
@@ -86,7 +86,7 @@ async def main():
         # isControlSuccess = scrcpy.Control.OpenHardKeyboardSetting()
         print(f"Send control: {isControlSuccess}")           
 
-        bgr_image = scrcpy.GetScreenShot()
+        bgr_image = scrcpy.GetScreenShot(SwsFlag.SWS_SINC)
         cv2.imwrite(f"TestScreenShot\\Test_{index:04d}.png", bgr_image)
         index += 1
 
