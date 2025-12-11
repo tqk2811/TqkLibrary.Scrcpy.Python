@@ -14,7 +14,7 @@ from .ScrcpyControlReceivedType import ScrcpyControlReceivedType
 from .ScrcpyControlType import ScrcpyControlType
 from .ScrcpyScreenPowerMode import ScrcpyScreenPowerMode
 from .VideoSource import VideoSource
-
+from .SwsFlag import SwsFlag
 __all__ = [
     'AndroidKeyCode',
     'AndroidKeyEventAction',
@@ -32,4 +32,5 @@ __all__ = [
     'ScrcpyControlType',
     'ScrcpyScreenPowerMode',
     'VideoSource',
+    'SwsFlag'
 ]

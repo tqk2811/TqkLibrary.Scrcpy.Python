@@ -23,6 +23,7 @@ from .Configs import(
 from .Structs import *
 from .Interfaces import *
 from .Events import *
+from .Enums import *
 import numpy as np
 import cv2
 
@@ -118,7 +119,7 @@ class Scrcpy(IScrcpy):
             finally:
                 self._countdown_event.release()
     
-    def GetScreenShot(self) -> Optional[np.ndarray]:
+    def GetScreenShot(self,swsFlag: Optional[SwsFlag] = None) -> Optional[np.ndarray]:
         """
         Chụp ảnh màn hình. Trong C# trả về System.Drawing.Bitmap.
         Trong Python, ta cần xử lý buffer để tạo một đối tượng hình ảnh (ví dụ: dùng PIL/Pillow).
@@ -143,6 +144,9 @@ class Scrcpy(IScrcpy):
         # Sử dụng byte array của Python, truyền qua ctypes
         image_buffer = (c_ubyte * buffer_size_in_byte)()
         
+        if swsFlag is None:
+            swsFlag = SwsFlag.SWS_FAST_BILINEAR
+
         isSucccess : bool = False
         with self._countdown_event:
             isSucccess = ScrcpyGetScreenShot(
@@ -151,7 +155,8 @@ class Scrcpy(IScrcpy):
                 buffer_size_in_byte,
                 size.Width,
                 size.Height,
-                fix_size.Width * 4 # lineSize
+                fix_size.Width * 4, # lineSize
+                swsFlag.value
             )
 
         img_array = np.frombuffer(image_buffer, dtype=np.uint8).reshape(fix_size.Height, fix_size.Width, 4)

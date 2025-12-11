@@ -14,6 +14,7 @@ INT32_MAX = 2147483647
 
 async def main():
     scrcpyConfig = ScrcpyConfig();
+    scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT 
     scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_NONE
     scrcpyConfig.ConnectionTimeout = 10000
     scrcpyConfig.AdbPath = "adb.exe"#dùng adb trong PATH

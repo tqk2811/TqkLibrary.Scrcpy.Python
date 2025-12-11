@@ -67,31 +67,31 @@ if _scrcpy_native_dll:
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
     # internal static extern bool ScrcpyGetScreenSize(IntPtr scrcpy, ref int w, ref int h);
     ScrcpyGetScreenSize = _scrcpy_native_dll.ScrcpyGetScreenSize
-    ScrcpyGetScreenSize.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int)]
+    ScrcpyGetScreenSize.argtypes = [c_void_p, POINTER(c_int32), POINTER(c_int32)]
     ScrcpyGetScreenSize.restype = c_bool
 
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
     # internal static extern bool ScrcpyGetDeviceName(IntPtr scrcpy, [In][Out][MarshalAs(UnmanagedType.LPArray)] byte[] buffer, int sizeInByte);
     ScrcpyGetDeviceName = _scrcpy_native_dll.ScrcpyGetDeviceName
-    ScrcpyGetDeviceName.argtypes = [c_void_p, POINTER(c_ubyte), c_int]
+    ScrcpyGetDeviceName.argtypes = [c_void_p, POINTER(c_ubyte), c_int32]
     ScrcpyGetDeviceName.restype = c_bool
 
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
     # internal static extern bool ScrcpyControlCommand(IntPtr scrcpy, [In][MarshalAs(UnmanagedType.LPArray)] byte[] command, int sizeInByte);
     ScrcpyControlCommand = _scrcpy_native_dll.ScrcpyControlCommand
-    ScrcpyControlCommand.argtypes = [c_void_p, POINTER(c_ubyte), c_int]
+    ScrcpyControlCommand.argtypes = [c_void_p, POINTER(c_ubyte), c_int32]
     ScrcpyControlCommand.restype = c_bool
 
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-    # internal static extern bool ScrcpyGetScreenShot(IntPtr scrcpy, IntPtr buffer, int sizeInByte, int w, int h, int lineSize);
+    # internal static extern bool ScrcpyGetScreenShot(IntPtr scrcpy, IntPtr buffer, int sizeInByte, int w, int h, int lineSize, SwsFlag swsFlag = SwsFlag.SWS_FAST_BILINEAR);
     ScrcpyGetScreenShot = _scrcpy_native_dll.ScrcpyGetScreenShot
-    ScrcpyGetScreenShot.argtypes = [c_void_p, c_void_p, c_int, c_int, c_int, c_int]
+    ScrcpyGetScreenShot.argtypes = [c_void_p, c_void_p, c_int32, c_int32, c_int32, c_int32, c_uint32]
     ScrcpyGetScreenShot.restype = c_bool
 
     # [DllImport("TqkLibrary.ScrcpyNative.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
     # internal static extern long ScrcpyReadAudioFrame(IntPtr scrcpy, IntPtr pFrame, long last_pts, UInt32 waitFrameTime);//return current pts if > 0
     ScrcpyReadAudioFrame = _scrcpy_native_dll.ScrcpyReadAudioFrame
-    ScrcpyReadAudioFrame.argtypes = [c_void_p, c_void_p, c_longlong, c_uint]
+    ScrcpyReadAudioFrame.argtypes = [c_void_p, c_void_p, c_longlong, c_uint32]
     ScrcpyReadAudioFrame.restype = c_longlong
 
     ## Region Register Event
