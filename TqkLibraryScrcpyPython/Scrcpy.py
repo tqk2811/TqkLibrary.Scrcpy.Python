@@ -159,6 +159,9 @@ class Scrcpy(IScrcpy):
                 swsFlag.value
             )
 
+        if isSucccess is False:
+            return None
+            
         img_array = np.frombuffer(image_buffer, dtype=np.uint8).reshape(fix_size.Height, fix_size.Width, 4)
         if size.Width != fix_size.Width:
             img_array = img_array[:size.Height, :size.Width, :]
