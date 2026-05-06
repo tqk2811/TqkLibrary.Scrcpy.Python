@@ -6,13 +6,14 @@ from ..Structs.Size import Size
 from ..Enums.CameraFacing import CameraFacing 
 
 class CameraConfig(BaseConfig):
-    
-    CameraId: Optional[int] = None
-    CameraSize: Optional[Size] = None 
-    CameraFacing: CameraFacing = CameraFacing.Any 
-    CameraAr: Optional[str] = None
-    Camerafps: int = 0
-    CameraHighSpeed: bool = False
+
+    def __init__(self):
+        self.CameraId: Optional[int] = None
+        self.CameraSize: Optional[Size] = None
+        self.CameraFacing: CameraFacing = CameraFacing.Any
+        self.CameraAr: Optional[str] = None
+        self.Camerafps: int = 0
+        self.CameraHighSpeed: bool = False
 
     def get_arguments(self) -> Iterable[str]:
         # --camera-id (C# default condition: not None/0)

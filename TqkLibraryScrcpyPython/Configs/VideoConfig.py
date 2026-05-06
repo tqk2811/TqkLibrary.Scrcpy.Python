@@ -6,16 +6,17 @@ from ..Structs.Rectangle import Rectangle
 from ..Enums.Orientations import Orientations 
 
 class VideoConfig(BaseConfig):
-    
-    DisplayId: Optional[int] = None
-    Orientation: Orientations = Orientations.Auto 
-    MaxFps: int = 0
-    VideoBitrate: int = 0
-    VideoCodec: Optional[str] = None
-    VideoCodecOption: Optional[str] = None
-    VideoEncoder: Optional[str] = None
-    Crop: Optional[Rectangle] = None 
-    DownsizeOnError: bool = True
+
+    def __init__(self):
+        self.DisplayId: Optional[int] = None
+        self.Orientation: Orientations = Orientations.Auto
+        self.MaxFps: int = 0
+        self.VideoBitrate: int = 0
+        self.VideoCodec: Optional[str] = None
+        self.VideoCodecOption: Optional[str] = None
+        self.VideoEncoder: Optional[str] = None
+        self.Crop: Optional[Rectangle] = None
+        self.DownsizeOnError: bool = True
 
     def get_arguments(self) -> Iterable[str]:
         # --display-id (C# condition: x.HasValue)

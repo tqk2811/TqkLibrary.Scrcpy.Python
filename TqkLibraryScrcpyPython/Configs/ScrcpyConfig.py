@@ -5,18 +5,19 @@ from ..Enums.FFmpegAVHWDeviceType import FFmpegAVHWDeviceType
 from ..Enums.D3D11Filter import D3D11Filter
 
 class ScrcpyConfig:
-    
-    ServerConfig: ScrcpyServerConfig = ScrcpyServerConfig()
-    AdbPath: str = "adb.exe"
-    ScrcpyServerPath: str = "scrcpy-server.jar"
-    ConnectionTimeout: int = 3000
-    HwType: FFmpegAVHWDeviceType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_NONE
-    Filter: D3D11Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT 
-    IsUseD3D11ForUiRender: bool = False
-    IsUseD3D11ForConvert: bool = False
-    GpuThreadX: int = 1
-    GpuThreadY: int = 4
-    IsForceUiGpuFlush: bool = False
+
+    def __init__(self):
+        self.ServerConfig: ScrcpyServerConfig = ScrcpyServerConfig()
+        self.AdbPath: str = "adb.exe"
+        self.ScrcpyServerPath: str = "scrcpy-server.jar"
+        self.ConnectionTimeout: int = 3000
+        self.HwType: FFmpegAVHWDeviceType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_NONE
+        self.Filter: D3D11Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
+        self.IsUseD3D11ForUiRender: bool = False
+        self.IsUseD3D11ForConvert: bool = False
+        self.GpuThreadX: int = 1
+        self.GpuThreadY: int = 4
+        self.IsForceUiGpuFlush: bool = False
 
     def __str__(self) -> str:
         """Tạo chuỗi tham số scrcpy hoàn chỉnh."""

@@ -4,11 +4,12 @@ from typing import Iterable
 from .BaseConfig import BaseConfig
 
 class AndroidConfig(BaseConfig):
-    
-    ShowTouches: bool = False
-    StayAwake: bool = True
-    PowerOffOnClose: bool = False
-    PowerOn: bool = True
+
+    def __init__(self):
+        self.ShowTouches: bool = False
+        self.StayAwake: bool = True
+        self.PowerOffOnClose: bool = False
+        self.PowerOn: bool = True
 
     def get_arguments(self) -> Iterable[str]:
         # --show_touches (C# default condition: value == true)

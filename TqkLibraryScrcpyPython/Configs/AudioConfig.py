@@ -4,12 +4,13 @@ from typing import Optional, Iterable
 from .BaseConfig import BaseConfig
 
 class AudioConfig(BaseConfig):
-    
-    IsAudio: bool = False
-    AudioBitrate: int = 0
-    AudioCodec: Optional[str] = None
-    AudioCodecOption: Optional[str] = None
-    AudioEncoder: Optional[str] = None
+
+    def __init__(self):
+        self.IsAudio: bool = False
+        self.AudioBitrate: int = 0
+        self.AudioCodec: Optional[str] = None
+        self.AudioCodecOption: Optional[str] = None
+        self.AudioEncoder: Optional[str] = None
 
     def get_arguments(self) -> Iterable[str]:
         # --audio (C# default condition: value == true)

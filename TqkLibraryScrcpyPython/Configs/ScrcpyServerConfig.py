@@ -10,23 +10,24 @@ from ..Enums.VideoSource import VideoSource
 from ..Enums.LogLevel import LogLevel 
 
 class ScrcpyServerConfig(BaseConfig):
-    
-    # Config Sub-classes
-    AndroidConfig: Optional[AndroidConfig] = None
-    VideoConfig: Optional[VideoConfig] = None
-    AudioConfig: Optional[AudioConfig] = None
-    CameraConfig: Optional[CameraConfig] = None
 
-    # Properties
-    VideoSource: VideoSource = VideoSource.Display
-    IsControl: bool = True
-    LogLevel: LogLevel = LogLevel.Info
-    SCID: int = -1
-    ClipboardAutosync: bool = False
-    Cleanup: bool = False
-    TunnelForward: bool = False #do not change
-    MaxSize: int = 0
-    ScrcpyServerVersion: str = "2.4" #do not change
+    def __init__(self):
+        # Config Sub-classes
+        self.AndroidConfig: Optional[AndroidConfig] = None
+        self.VideoConfig: Optional[VideoConfig] = None
+        self.AudioConfig: Optional[AudioConfig] = None
+        self.CameraConfig: Optional[CameraConfig] = None
+
+        # Properties
+        self.VideoSource: VideoSource = VideoSource.Display
+        self.IsControl: bool = True
+        self.LogLevel: LogLevel = LogLevel.Info
+        self.SCID: int = -1
+        self.ClipboardAutosync: bool = False
+        self.Cleanup: bool = False
+        self.TunnelForward: bool = False  # do not change
+        self.MaxSize: int = 0
+        self.ScrcpyServerVersion: str = "2.4"  # do not change
 
     def _get_server_arguments(self) -> Iterable[str]:
         """Tạo các tham số chỉ dành cho Server Config."""        
