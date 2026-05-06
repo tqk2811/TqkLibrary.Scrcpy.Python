@@ -1,8 +1,10 @@
 # TqkLibrary.Scrcpy.Python/Configs/ScrcpyConfig.py
 from .ScrcpyServerConfig import ScrcpyServerConfig
 from .ScrcpyNativeConfig import ScrcpyNativeConfig
+from .AudioConfig import AudioConfig
 from ..Enums.FFmpegAVHWDeviceType import FFmpegAVHWDeviceType
 from ..Enums.D3D11Filter import D3D11Filter
+
 
 class ScrcpyConfig:
 
@@ -20,44 +22,37 @@ class ScrcpyConfig:
         self.IsForceUiGpuFlush: bool = False
 
     def __str__(self) -> str:
-        """Tạo chuỗi tham số scrcpy hoàn chỉnh."""
         if self.ServerConfig is None:
             self.ServerConfig = ScrcpyServerConfig()
-        
-        # Lấy tham số từ ServerConfig (đã kế thừa BaseConfig và gọi get_arguments())
-        arguments = self.ServerConfig.get_arguments()
-        return " ".join(arguments)
-        
+        return " ".join(self.ServerConfig.get_arguments())
+
     def NativeConfig(self) -> ScrcpyNativeConfig:
-        configure_arguments = str(self)
+        if self.ServerConfig is None:
+            self.ServerConfig = ScrcpyServerConfig()
+        server_config = self.ServerConfig
+
+        if server_config.AudioConfig is None:
+            server_config.AudioConfig = AudioConfig()
+
+        is_video = server_config.IsVideo
+        is_audio = server_config.AudioConfig.IsAudio
+        is_control = server_config.IsControl
+        if not (is_video or is_audio or is_control):
+            raise ValueError("At least one stream (video, audio, control) must be enabled.")
+
         gpu_thread_x = max(1, min(self.GpuThreadX, 32))
         gpu_thread_y = max(1, min(self.GpuThreadY, 32))
-        server_config = self.ServerConfig
-        if server_config is None:
-             server_config = ScrcpyServerConfig()
-             self.ServerConfig = server_config # Cập nhật lại thuộc tính
-             
-        audio_config = server_config.AudioConfig
-        if audio_config is None:
-            audio_config = AudioConfig()
-            server_config.AudioConfig = audio_config # Cập nhật lại thuộc tính
 
-        hw_type_value = 0
-        # Tạo và điền dữ liệu vào struct ScrcpyNativeConfig
         return ScrcpyNativeConfig(
             HwType=self.HwType.value,
-            ForceAdbForward=server_config.TunnelForward,
-            IsControl=server_config.IsControl,
+            IsControl=is_control,
             IsUseD3D11ForUiRender=self.IsUseD3D11ForUiRender,
             IsUseD3D11ForConvert=self.IsUseD3D11ForConvert,
-            IsAudio=audio_config.IsAudio,
-            ScrcpyServerPath=self.ScrcpyServerPath,
-            AdbPath=self.AdbPath,
-            ConfigureArguments=configure_arguments,
+            IsAudio=is_audio,
+            IsVideo=is_video,
             ConnectionTimeout=self.ConnectionTimeout,
             Filter=self.Filter.value,
-            SCID=server_config.SCID,
             GpuThreadX=gpu_thread_x,
             GpuThreadY=gpu_thread_y,
-            IsForceUiGpuFlush = self.IsForceUiGpuFlush,
+            IsForceUiGpuFlush=int(bool(self.IsForceUiGpuFlush)),
         )

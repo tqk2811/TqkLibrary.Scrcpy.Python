@@ -15,7 +15,8 @@ INT32_MAX = 2147483647
 async def main():
     scrcpyConfig = ScrcpyConfig();
     scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT 
-    scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_NONE
+    scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA
+    scrcpyConfig.IsUseD3D11ForConvert = True
     scrcpyConfig.ConnectionTimeout = 10000
     scrcpyConfig.AdbPath = "adb.exe"#dùng adb trong PATH
     scrcpyConfig.ScrcpyServerPath = os.path.dirname(os.path.abspath(__file__)) + "\\TqkLibraryScrcpyPython\\scrcpy-server-v2.4.jar"
@@ -34,7 +35,9 @@ async def main():
     scrcpyConfig.ServerConfig.SCID = random.randint(INT32_MIN, INT32_MAX)
     scrcpy = Scrcpy("a29bc285")
     scrcpy.OnClipboardReceived.Register(on_clipboard_received)
+    scrcpy.OnDisconnect.Register(on_disconnect)
     isSuccess: bool = scrcpy.Connect(scrcpyConfig)
+    print(f"DeviceName: {scrcpy.DeviceName}")
 
     folder_path = Path("TestScreenShot")
     if folder_path.exists():
@@ -90,8 +93,11 @@ async def main():
         cv2.imwrite(f"TestScreenShot\\Test_{index:04d}.png", bgr_image)
         index += 1
 
-def on_clipboard_received(scrcpy: IScrcpy,text: str) -> None:
+def on_clipboard_received(scrcpy: IScrcpy, text: str) -> None:
     print(f"Đã nhận clipboard: {text}")
+
+def on_disconnect(scrcpy: IScrcpy, source: ScrcpyDisconnectSource) -> None:
+    print(f"Disconnected: source={source.name}")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -99,22 +99,29 @@ class ScrcpyControl(IControl):
     def _send_control(self, command: bytes) -> bool:
         return self.Scrcpy.SendControl(command)
 
-    # --- Native Event Handlers ---
+    # --- Native Event Handlers (delegate giờ trả bool về native) ---
 
-    def _native_on_clipboard_received(self, int_ptr: int, length: int):
+    def _native_on_clipboard_received(self, int_ptr: int, length: int) -> bool:
+        clipboard_text = ""
+        if length > 0 and int_ptr:
+            try:
+                clipboard_bytes = string_at(int_ptr, length)
+                clipboard_text = clipboard_bytes.decode('utf-8', errors='replace')
+            except Exception:
+                clipboard_text = ""
+
+        # Cập nhật LastClipboard ngay (đồng bộ) để property phản ánh đúng
+        try:
+            self._scrcpy._set_last_clipboard(clipboard_text)
+        except Exception:
+            pass
+
+        # Fire event ở thread riêng để không hold native thread
         def process_clipboard():
-            clipboard_text = ""
-            if length > 0:
-                try:
-                    char_ptr = cast(int_ptr, POINTER(c_char))
-                    clipboard_bytes = string_at(char_ptr, length)
-                    clipboard_text = clipboard_bytes.decode('utf-8')
-                except UnicodeDecodeError:
-                    print("Error decoding clipboard data.")
-                    return
-            self.Scrcpy.OnClipboardReceived.Fire(self.Scrcpy, clipboard_text)
+            self._scrcpy.OnClipboardReceived.Fire(self._scrcpy, clipboard_text)
+        threading.Thread(target=process_clipboard, daemon=True).start()
+        return True
 
-        threading.Thread(target=process_clipboard).start()
-
-    def _native_clipboard_acknowledgement_received(self, sequence: int):
-        print(f"ClipboardAcknowledgement {sequence}")
+    def _native_clipboard_acknowledgement_received(self, sequence: int) -> bool:
+        # sequence là UINT64 từ native; hiện chưa expose event public.
+        return True

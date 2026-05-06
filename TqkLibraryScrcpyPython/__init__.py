@@ -31,7 +31,9 @@ __all__ = [
     "ScrcpyScreenPowerMode",
     "VideoSource",
     "SwsFlag",
-    
+    "ScrcpyDisconnectSource",
+    "AVSampleFormat",
+
     "ScrcpyMousePointerId",
 
     "Rectangle",

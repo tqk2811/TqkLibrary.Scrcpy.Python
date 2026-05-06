@@ -12,14 +12,11 @@ class AndroidConfig(BaseConfig):
         self.PowerOn: bool = True
 
     def get_arguments(self) -> Iterable[str]:
-        # --show_touches (C# default condition: value == true)
-        yield self._get_argument("show_touches", self.ShowTouches)
-        
-        # --stay-awake
-        yield self._get_argument("stay_awake", self.StayAwake)
-        
-        # --power_off_on_close
-        yield self._get_argument("power_off_on_close", self.PowerOffOnClose)
-        
-        # --power_on
-        yield self._get_argument("power_on", self.PowerOn)
+        # show_touches=true chỉ phát khi True (default false)
+        yield self._get_argument("show_touches", self.ShowTouches, condition=lambda x: x)
+        # stay_awake=true chỉ phát khi True (default false phia scrcpy)
+        yield self._get_argument("stay_awake", self.StayAwake, condition=lambda x: x)
+        # power_off_on_close=true chỉ phát khi True
+        yield self._get_argument("power_off_on_close", self.PowerOffOnClose, condition=lambda x: x)
+        # power_on=false chỉ phát khi False (server default true)
+        yield self._get_argument("power_on", self.PowerOn, condition=lambda x: not x)

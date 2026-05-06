@@ -115,7 +115,11 @@ class IScrcpy(abc.ABC):
     @abc.abstractmethod
     def _register_clipboard_event(self, method: NativeOnClipboardReceivedDelegate) -> bool:
         pass
-    
+
     @abc.abstractmethod
     def _register_clipboard_acknowledgement_event(self, method: NativeOnClipboardReceivedDelegate) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def _set_last_clipboard(self, data: str) -> None:
         pass
