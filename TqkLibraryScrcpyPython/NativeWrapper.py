@@ -4,17 +4,34 @@ import platform
 from .Configs import ScrcpyNativeConfig
 import os
 
+import glob
+
+if platform.system() != "Windows":
+    raise RuntimeError("TqkLibrary.ScrcpyNative chi ho tro Windows")
+
+_dll_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "x64")
+_scrcpy_native_path = os.path.join(_dll_dir, "TqkLibrary.ScrcpyNative.dll")
+
+# Đảm bảo Windows tìm được FFmpeg deps (avcodec, avutil, swscale, swresample, ...)
+# trong cùng thư mục với ScrcpyNative.dll
+if hasattr(os, "add_dll_directory"):
+    os.add_dll_directory(_dll_dir)
+
 try:
-    if platform.system() == "Windows":
-        dir = os.path.dirname(os.path.abspath(__file__)) + "\\x64"
-        _scrcpy_native_dll = ctypes.CDLL(dir + "\\TqkLibrary.ScrcpyNative.dll")
-        _avutil = ctypes.CDLL(dir + "\\avutil-57.dll")
-    else:
-        raise Exception("Không hỗ trợ")
+    _scrcpy_native_dll = ctypes.CDLL(_scrcpy_native_path)
 except OSError as e:
-    print(f"Lỗi khi load DLL: {e}")
-    _scrcpy_native_dll = None
-    _avutil = None
+    raise RuntimeError(
+        f"Failed to load TqkLibrary.ScrcpyNative.dll at {_scrcpy_native_path}: {e}"
+    ) from e
+
+# Tìm avutil-*.dll (version theo FFmpeg build), load nếu có
+_avutil = None
+_avutil_candidates = glob.glob(os.path.join(_dll_dir, "avutil-*.dll"))
+if _avutil_candidates:
+    try:
+        _avutil = ctypes.CDLL(_avutil_candidates[0])
+    except OSError:
+        _avutil = None
 
 # Windows SOCKET là UINT_PTR (pointer-sized). Dùng c_void_p để pass socket.fileno().
 SOCKET = c_void_p
