@@ -14,9 +14,10 @@ INT32_MAX = 2147483647
 
 async def main():
     scrcpyConfig = ScrcpyConfig();
-    scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT 
+    scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
     scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA
     scrcpyConfig.IsUseD3D11ForConvert = True
+    scrcpyConfig.IsUseD3D11ForUiRender = True  # bắt buộc khi IsUseD3D11ForConvert=True (DLL không validate, sẽ crash nếu thiếu)
     scrcpyConfig.ConnectionTimeout = 10000
     scrcpyConfig.AdbPath = "adb.exe"#dùng adb trong PATH
     scrcpyConfig.ScrcpyServerPath = os.path.dirname(os.path.abspath(__file__)) + "\\TqkLibraryScrcpyPython\\scrcpy-server-v2.4.jar"
