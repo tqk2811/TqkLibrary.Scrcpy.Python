@@ -3,3 +3,4 @@ TestScreenShot/*.png
 TqkLibraryScrcpyPython/x64/**/*.*
 __pycache__
 .claude
+*.zip
