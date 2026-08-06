@@ -15,6 +15,12 @@ class CameraConfig(BaseConfig):
         self.Camerafps: int = 0
         self.CameraHighSpeed: bool = False
 
+        # Zoom camera (hệ số nhân, vd 2.0 = 2x). Default 1 (bỏ qua). scrcpy 4.0
+        self.CameraZoom: float = 1
+
+        # Bật đèn flash camera. scrcpy 4.0
+        self.CameraTorch: bool = False
+
     def get_arguments(self) -> Iterable[str]:
         # --camera-id (C# default condition: not None/0)
         yield self._get_argument("camera_id", self.CameraId)
@@ -44,5 +50,16 @@ class CameraConfig(BaseConfig):
             condition=lambda x: x > 0
         )
         
-        # --camera-high-speed (C# default condition: value == true)
-        yield self._get_argument("camera_high_speed", self.CameraHighSpeed)
+        # --camera-high-speed (C#: _GetArgument(x => x.CameraHighSpeed, CameraHighSpeed)
+        # -> chỉ phát khi True, không phát camera_high_speed=false)
+        yield self._get_argument("camera_high_speed", self.CameraHighSpeed, condition=lambda x: x)
+
+        # --camera-torch (scrcpy 4.0), cũng chỉ phát khi True
+        yield self._get_argument("camera_torch", self.CameraTorch, condition=lambda x: x)
+
+        # --camera-zoom (scrcpy 4.0), chỉ phát khi khác mặc định
+        yield self._get_argument(
+            "camera_zoom",
+            float(self.CameraZoom),
+            condition=lambda x: x != 1
+        )

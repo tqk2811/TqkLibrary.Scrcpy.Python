@@ -75,6 +75,16 @@ class BaseConfig(ABC):
             # C# return $"{optionNameAttribute.Name}={size.Width}x{size.Height}";
             return f"{option_name}={value.Width}x{value.Height}"
             
+        # C# else if (select is float f || select is double d)
+        # Phải đứng TRƯỚC nhánh int; bool đã được bắt ở trên nên không lọt xuống đây.
+        # str(float) của Python luôn dùng dấu chấm thập phân (invariant), khớp C#
+        # CultureInfo.InvariantCulture — không phụ thuộc locale máy.
+        elif isinstance(value, float):
+            # Số nguyên thì bỏ đuôi .0 cho khớp cách C# format (vd max_fps=6 chứ không phải 6.0)
+            if value.is_integer():
+                return f"{option_name}={int(value)}"
+            return f"{option_name}={value!r}"
+
         # C# else if (select is int i)
         elif isinstance(value, int):
             # C# return $"{optionNameAttribute.Name}={i}";

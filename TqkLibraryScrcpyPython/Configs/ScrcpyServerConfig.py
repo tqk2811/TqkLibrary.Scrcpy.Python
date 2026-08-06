@@ -8,6 +8,8 @@ from .VideoConfig import VideoConfig
 from .CameraConfig import CameraConfig
 from ..Enums.VideoSource import VideoSource
 from ..Enums.LogLevel import LogLevel
+from ..Enums.DisplayImePolicy import DisplayImePolicy
+from .. import Constant
 
 
 class ScrcpyServerConfig(BaseConfig):
@@ -29,7 +31,30 @@ class ScrcpyServerConfig(BaseConfig):
         self.Cleanup: bool = False
         self.TunnelForward: bool = False  # do not change
         self.MaxSize: int = 0
-        self.ScrcpyServerVersion: str = "2.4"  # do not change
+
+        # Tắt màn hình sau khoảng trễ này (ms). -1 = không giới hạn (mặc định). scrcpy 3.0
+        self.ScreenOffTimeout: int = -1
+
+        # Tạo display ảo với độ phân giải + dpi chỉ định.
+        # Dạng: "[<width>x<height>][/<dpi>]" vd "1920x1080/320", hoặc "" để dùng mặc định thiết bị.
+        # None = bỏ qua (dùng màn hình vật lý). scrcpy 3.0
+        self.NewDisplay: Optional[str] = None
+
+        # Hiện system decoration trên display ảo. False -> phát vd_system_decorations=false. scrcpy 3.0
+        self.VdSystemDecorations: bool = True
+
+        # Huỷ nội dung (đưa task về display chính) khi display ảo đóng.
+        # False -> phát vd_destroy_content=false. scrcpy 3.1
+        self.VdDestroyContent: bool = True
+
+        # Chính sách IME trên display đang capture. None = bỏ qua (mặc định server). scrcpy 3.2
+        self.DisplayImePolicy: Optional[DisplayImePolicy] = None
+
+        # Giữ thiết bị "active" (không để display bị idle/dim) khi scrcpy đang chạy. scrcpy 4.0
+        self.KeepActive: bool = False
+
+        # Version string gửi cho server, phải khớp scrcpy-server.jar đang deploy.
+        self.ScrcpyServerVersion: str = Constant.ScrcpyServerVersion  # do not change
 
     def _get_server_arguments(self) -> Iterable[str]:
         """Tham số dành cho Server Config. Chỉ phát ra khi value khác mặc định của scrcpy-server."""
@@ -50,6 +75,19 @@ class ScrcpyServerConfig(BaseConfig):
         # tunnel_forward=true chỉ phát khi True (server default false)
         yield self._get_argument("tunnel_forward", self.TunnelForward, condition=lambda x: x)
         yield self._get_argument("max_size", self.MaxSize, condition=lambda x: x > 0)
+        yield self._get_argument("screen_off_timeout", self.ScreenOffTimeout, condition=lambda x: x != -1)
+        yield self._get_argument(
+            "new_display", self.NewDisplay,
+            condition=lambda x: x is not None and bool(str(x).strip()),
+        )
+        # 2 option dưới đây chỉ có nghĩa ở dạng phủ định nên phát tay, giống C#
+        if not self.VdSystemDecorations:
+            yield "vd_system_decorations=false"
+        if not self.VdDestroyContent:
+            yield "vd_destroy_content=false"
+        if self.DisplayImePolicy is not None:
+            yield f"display_ime_policy={self.DisplayImePolicy.name.lower()}"
+        yield self._get_argument("keep_active", self.KeepActive, condition=lambda x: x)
         if self.IsVideo:
             yield self._get_argument(
                 "video_source", self.VideoSource,
