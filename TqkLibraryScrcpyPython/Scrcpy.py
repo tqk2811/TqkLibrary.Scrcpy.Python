@@ -298,7 +298,13 @@ class Scrcpy(IScrcpy):
             return None
 
         width = size.Width
-        fix_width = width if width % 16 == 0 else width + 16 - (width % 16)
+        # Phải khớp ĐÚNG công thức của native FrameConventer::Convert:
+        #     int fix_w = w + w % 16;
+        # Native kiểm tra `linesizes[0] != lineSize` rồi return false, nên lệch một chút là
+        # GetScreenShot fail im lặng (trả None) chứ không báo lỗi gì. Làm tròn LÊN bội 16
+        # (`w + 16 - w % 16`) chỉ trùng công thức trên khi w % 16 ∈ {0, 8} — đủ để mọi máy
+        # 1080 chạy được nhưng width 1050 thì hỏng.
+        fix_width = width + (width % 16)
         fix_size = Size(fix_width, size.Height)
         buffer_size = fix_size.Width * fix_size.Height * 4
         image_buffer = (c_ubyte * buffer_size)()
