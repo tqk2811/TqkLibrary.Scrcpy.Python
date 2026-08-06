@@ -12,15 +12,25 @@ import shutil
 INT32_MIN = -2147483648
 INT32_MAX = 2147483647
 
+JAR_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "TqkLibraryScrcpyPython", "scrcpy-server-v4.0.jar")
+DEVICE_ID = "a29bc285"
+
+
 async def main():
-    scrcpyConfig = ScrcpyConfig();
+    scrcpyConfig = ScrcpyConfig()
     scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
     scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA
     scrcpyConfig.IsUseD3D11ForConvert = True
     scrcpyConfig.IsUseD3D11ForUiRender = True  # bắt buộc khi IsUseD3D11ForConvert=True (DLL không validate, sẽ crash nếu thiếu)
     scrcpyConfig.ConnectionTimeout = 10000
-    scrcpyConfig.AdbPath = "adb.exe"#dùng adb trong PATH
-    scrcpyConfig.ScrcpyServerPath = os.path.dirname(os.path.abspath(__file__)) + "\\TqkLibraryScrcpyPython\\scrcpy-server-v2.4.jar"
+
+    # adb + jar giờ nằm trong DeployConfig (breaking change so với 2.4)
+    scrcpyConfig.DeployConfig.AdbPath = "adb.exe"  # dùng adb trong PATH
+    scrcpyConfig.DeployConfig.ScrcpyServerPath = JAR_PATH
+    # Đặt False để bỏ push mỗi lần Connect (phải tự gọi scrcpy.PushServer() một lần trước đó)
+    scrcpyConfig.ForcePush = True
+
     scrcpyConfig.ServerConfig = ScrcpyServerConfig()
     scrcpyConfig.ServerConfig.IsControl = True
     scrcpyConfig.ServerConfig.VideoSource = VideoSource.Display
@@ -32,13 +42,18 @@ async def main():
     scrcpyConfig.ServerConfig.ClipboardAutosync = False
     scrcpyConfig.ServerConfig.VideoConfig = VideoConfig()
     scrcpyConfig.ServerConfig.VideoConfig.MaxFps = 6
-    scrcpyConfig.ServerConfig.VideoConfig.Orientation = Orientations.Natural
+    # scrcpy 3.0 bỏ lock_video_orientation, thay bằng capture_orientation
+    scrcpyConfig.ServerConfig.VideoConfig.CaptureOrientation = CaptureOrientations.Orient0
+    scrcpyConfig.ServerConfig.VideoConfig.CaptureOrientationLock = CaptureOrientationLock.LockedValue
     scrcpyConfig.ServerConfig.SCID = random.randint(INT32_MIN, INT32_MAX)
-    scrcpy = Scrcpy("a29bc285")
+
+    print(f"server args: {scrcpyConfig}")
+
+    scrcpy = Scrcpy(DEVICE_ID)
     scrcpy.OnClipboardReceived.Register(on_clipboard_received)
     scrcpy.OnDisconnect.Register(on_disconnect)
     isSuccess: bool = scrcpy.Connect(scrcpyConfig)
-    print(f"DeviceName: {scrcpy.DeviceName}")
+    print(f"Connected: {isSuccess}, DeviceName: {scrcpy.DeviceName}")
 
     folder_path = Path("TestScreenShot")
     if folder_path.exists():
@@ -46,6 +61,7 @@ async def main():
     folder_path.mkdir(parents=True, exist_ok=False)
 
     screenSize = scrcpy.ScreenSize
+    print(f"ScreenSize: {screenSize.Width}x{screenSize.Height}")
 
     index = 0
     while isSuccess:
@@ -72,6 +88,7 @@ async def main():
         #         buttons = AndroidMotionEventButton.BUTTON_PRIMARY,
         #         action_button = AndroidMotionEventButton.BUTTON_PRIMARY
         #     )
+        # scrcpy 3.3+ : khoảng scroll là [-16, 16] thay vì [-1, 1]
         # isControlSuccess = scrcpy.Control.InjectScrollEvent(
         #         position = Rectangle(screenSize.Width/2,screenSize.Height/2,screenSize.Width,screenSize.Height),
         #         v_scroll = -1.0, #cuộn xuống
@@ -80,25 +97,66 @@ async def main():
         #     )
         # isControlSuccess = scrcpy.Control.SetClipboard("kiểm tra clipboard", True)
         # isControlSuccess = scrcpy.Control.GetClipboard(copy_key=CopyKey.Copy)
-        # isControlSuccess = scrcpy.Control.SetScreenPowerMode(ScrcpyScreenPowerMode.POWER_MODE_OFF)
-        # isControlSuccess = scrcpy.Control.SetScreenPowerMode(ScrcpyScreenPowerMode.POWER_MODE_NORMAL)
+        # scrcpy 3.0 thay SetScreenPowerMode bằng SetDisplayPower(bool)
+        # isControlSuccess = scrcpy.Control.SetDisplayPower(False)
+        # isControlSuccess = scrcpy.Control.SetDisplayPower(True)
         # isControlSuccess = scrcpy.Control.BackOrScreenOn(AndroidKeyEventAction.ACTION_DOWN)
         # isControlSuccess = scrcpy.Control.ExpandNotificationPanel()
         # isControlSuccess = scrcpy.Control.ExpandSettingsPanel()
         # isControlSuccess = scrcpy.Control.CollapsePanel()
         # isControlSuccess = scrcpy.Control.RotateDevice()
         # isControlSuccess = scrcpy.Control.OpenHardKeyboardSetting()
-        print(f"Send control: {isControlSuccess}")           
+        # --- lệnh mới của scrcpy 3.0 / 4.0 ---
+        # isControlSuccess = scrcpy.Control.StartApp("com.android.settings")
+        # isControlSuccess = scrcpy.Control.StartApp("+com.android.settings")  # force-stop trước khi mở
+        # isControlSuccess = scrcpy.Control.ResetVideo()
+        # chỉ có nghĩa khi VideoSource = Camera:
+        # isControlSuccess = scrcpy.Control.CameraSetTorch(True)
+        # isControlSuccess = scrcpy.Control.CameraZoomIn()
+        # isControlSuccess = scrcpy.Control.CameraZoomOut()
+        # chỉ dùng được với display ảo flex (NewDisplay + FlexDisplay=True):
+        # isControlSuccess = scrcpy.Control.ResizeDisplay(1280, 720)
+        print(f"Send control: {isControlSuccess}")
 
         bgr_image = scrcpy.GetScreenShot(SwsFlag.SWS_SINC)
         cv2.imwrite(f"TestScreenShot\\Test_{index:04d}.png", bgr_image)
         index += 1
 
+
+def test_list_support():
+    """Hỏi thiết bị xem hỗ trợ encoder/display/camera/app nào. Không cần Connect()."""
+    query = ListSupportQuery()
+    query.DeployConfig.AdbPath = "adb.exe"
+    query.DeployConfig.ScrcpyServerPath = JAR_PATH
+    query.ListEncoders = True
+    query.ListDisplays = True
+    query.ListCameras = True
+    query.ListApps = True
+
+    scrcpy = Scrcpy(DEVICE_ID)
+    try:
+        result = scrcpy.ListSupport(query)
+        print("--- Video encoders ---"); pprint(result.Videos)
+        print("--- Audio encoders ---"); pprint(result.Audios)
+        print("--- Displays ---");       pprint(result.Displays)
+        print("--- Cameras ---");        pprint(result.CameraInfos)
+        print("--- Apps ---");           pprint(result.Apps)
+    finally:
+        scrcpy.Dispose()
+
+
 def on_clipboard_received(scrcpy: IScrcpy, text: str) -> None:
     print(f"Đã nhận clipboard: {text}")
+
 
 def on_disconnect(scrcpy: IScrcpy, source: ScrcpyDisconnectSource) -> None:
     print(f"Disconnected: source={source.name}")
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    # py test.py       -> mirror + chụp màn hình
+    # py test.py list  -> chỉ query danh sách hỗ trợ
+    if len(sys.argv) > 1 and sys.argv[1] == "list":
+        test_list_support()
+    else:
+        asyncio.run(main())
