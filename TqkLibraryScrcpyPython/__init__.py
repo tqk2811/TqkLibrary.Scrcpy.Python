@@ -1,15 +1,18 @@
 from .Configs import *
 from .Enums import *
 from .Structs import *
+from .Exceptions import *
 from .Scrcpy import Scrcpy
 from .Interfaces import *
 from .Events import *
 from .Controls import *
+from .ListSupport import *
 __all__ = [
     "AndroidConfig",
     "AudioConfig",
     "CameraConfig",
     "ScrcpyConfig",
+    "ScrcpyDeployConfig",
     "ScrcpyNativeConfig",
     "ScrcpyServerConfig",
     "VideoConfig",
@@ -21,14 +24,15 @@ __all__ = [
     "AndroidMotionEventButton",
     "AudioSource",
     "CameraFacing",
+    "CaptureOrientationLock",
+    "CaptureOrientations",
     "CopyKey",
     "D3D11Filter",
+    "DisplayImePolicy",
     "FFmpegAVHWDeviceType",
     "LogLevel",
-    "Orientations",
     "ScrcpyControlReceivedType",
     "ScrcpyControlType",
-    "ScrcpyScreenPowerMode",
     "VideoSource",
     "SwsFlag",
     "ScrcpyDisconnectSource",
@@ -39,6 +43,9 @@ __all__ = [
     "Rectangle",
     "Size",
 
+    "ScrcpyException",
+    "InvalidRangeException",
+
     "IControl",
     "IScrcpy",
 
@@ -47,5 +54,12 @@ __all__ = [
     "DisconnectEvent",
     "DisconnectHandler",
 
-    "Scrcpy",   
+    "AppInfo",
+    "CameraInfo",
+    "CodecInfo",
+    "DisplayInfo",
+    "ListSupportQuery",
+    "ScrcpyServerListSupport",
+
+    "Scrcpy",
 ]
