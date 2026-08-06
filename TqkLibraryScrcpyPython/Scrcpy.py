@@ -21,12 +21,13 @@ from .NativeWrapper import (
     RegisterClipboardAcknowledgementEvent, NativeOnClipboardAcknowledgementDelegate,
     RegisterUhdiOutputEvent, NativeUhdiOutputDelegate,
 )
-from .Configs import ScrcpyConfig, ScrcpyNativeConfig
+from .Configs import ScrcpyConfig, ScrcpyNativeConfig, ScrcpyDeployConfig
 from .Controls import ScrcpyControl
 from .Structs import Size
 from .Interfaces import IScrcpy
 from .Events import DisconnectEvent, ClipboardEvent
 from .Enums import SwsFlag, ScrcpyDisconnectSource, AVSampleFormat
+from .Exceptions import ScrcpyException
 
 import numpy as np
 
@@ -109,6 +110,25 @@ class Scrcpy(IScrcpy):
     def OnClipboardReceived(self) -> ClipboardEvent:
         return self._clipboardEvent
 
+    # --- Deploy ---
+
+    def PushServer(self, config: Optional[ScrcpyDeployConfig] = None) -> bool:
+        """Đẩy scrcpy-server.jar lên thiết bị.
+
+        Dùng khi đặt ScrcpyConfig.ForcePush = False để bỏ push ở mỗi lần Connect: gọi hàm này
+        một lần (vd lần connect đầu tiên). Truyền chính ScrcpyConfig.DeployConfig của config
+        dùng để Connect để cả hai thống nhất đường dẫn.
+        """
+        if config is None:
+            config = ScrcpyDeployConfig()
+        return self._push_server_internal(config, config.GetResolvedAndroidPath())
+
+    def _push_server_internal(self, config: ScrcpyDeployConfig, scrcpy_server_android_path: str) -> bool:
+        return self._run_adb_sync(
+            config.AdbPath,
+            ["-s", self._deviceId, "push", config.ScrcpyServerPath, scrcpy_server_android_path],
+        ) == 0
+
     # --- Connect / Stop ---
 
     def Connect(self, config: Optional[ScrcpyConfig] = None) -> bool:
@@ -117,7 +137,10 @@ class Scrcpy(IScrcpy):
         if config is None:
             config = ScrcpyConfig()
 
-        self._adbPath = config.AdbPath
+        deploy_config = config.DeployConfig
+        scrcpy_server_android_path = deploy_config.GetResolvedAndroidPath()
+
+        self._adbPath = deploy_config.AdbPath
         self._screen_size_cache = None
         native_config = config.NativeConfig()
 
@@ -143,15 +166,12 @@ class Scrcpy(IScrcpy):
 
         # Setup ADB tunnel + push server jar
         # Bỏ qua lỗi của reverse --remove (rule có thể chưa tồn tại)
-        self._run_adb_sync(config.AdbPath, ["-s", self._deviceId, "reverse", "--remove", scid_prefix])
-        if self._run_adb_sync(
-            config.AdbPath,
-            ["-s", self._deviceId, "push", config.ScrcpyServerPath, "/sdcard/scrcpy-server-tqk.jar"],
-        ) != 0:
+        self._run_adb_sync(deploy_config.AdbPath, ["-s", self._deviceId, "reverse", "--remove", scid_prefix])
+        if config.ForcePush and not self._push_server_internal(deploy_config, scrcpy_server_android_path):
             listener.close()
             return False
         if self._run_adb_sync(
-            config.AdbPath,
+            deploy_config.AdbPath,
             ["-s", self._deviceId, "reverse", scid_prefix, f"tcp:{port}"],
         ) != 0:
             listener.close()
@@ -161,8 +181,8 @@ class Scrcpy(IScrcpy):
         cfg_str = str(config).strip()
         cfg_args = cfg_str.split() if cfg_str else []
         server_cmd = [
-            config.AdbPath, "-s", self._deviceId, "shell",
-            "CLASSPATH=/sdcard/scrcpy-server-tqk.jar",
+            deploy_config.AdbPath, "-s", self._deviceId, "shell",
+            f"CLASSPATH={scrcpy_server_android_path}",
             "app_process", "/", "com.genymobile.scrcpy.Server",
         ] + cfg_args
         creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -303,7 +323,8 @@ class Scrcpy(IScrcpy):
         # Native kiểm tra `linesizes[0] != lineSize` rồi return false, nên lệch một chút là
         # GetScreenShot fail im lặng (trả None) chứ không báo lỗi gì. Làm tròn LÊN bội 16
         # (`w + 16 - w % 16`) chỉ trùng công thức trên khi w % 16 ∈ {0, 8} — đủ để mọi máy
-        # 1080 chạy được nhưng width 1050 thì hỏng.
+        # 1080 chạy được nhưng width 1050 thì hỏng. C# cũng từng sai đúng chỗ này (commit
+        # d3337b6) và đã vá ở `fix(screenshot): match the native padded-width formula`.
         fix_width = width + (width % 16)
         fix_size = Size(fix_width, size.Height)
         buffer_size = fix_size.Width * fix_size.Height * 4
@@ -401,6 +422,39 @@ class Scrcpy(IScrcpy):
     def _uhdi_output_callback(self, id: int, size: int, buff: int) -> bool:
         # buff là pointer thô, hiện tại không xử lý.
         return True
+
+    # --- List support ---
+
+    def ListSupport(self, listSupportQuery, timeout_sec: Optional[float] = 30.0):
+        """Hỏi server danh sách encoder/display/camera/app hỗ trợ.
+
+        Chạy server với cờ list_* rồi parse text stdout — server in ra và tự thoát, không mở
+        socket nào, nên không cần Connect() trước.
+        """
+        if listSupportQuery is None:
+            raise ValueError("listSupportQuery cannot be None")
+
+        from .Helpers import push_server, run_server_with_adb
+        from .ListSupport import ScrcpyServerListSupport
+
+        deploy_config = listSupportQuery.DeployConfig
+        scrcpy_server_android_path = deploy_config.GetResolvedAndroidPath()
+
+        push_server(deploy_config, self._deviceId, timeout_sec)
+
+        q = " ".join(x for x in listSupportQuery.get_arguments() if x and x.strip())
+        result = run_server_with_adb(
+            deploy_config.AdbPath,
+            self._deviceId,
+            ["shell", f"CLASSPATH={scrcpy_server_android_path}",
+             "app_process", "/", "com.genymobile.scrcpy.Server"] + q.split(),
+            timeout_sec,
+        )
+
+        if result.StdErr and result.StdErr.strip():
+            raise ScrcpyException(result.StdErr)
+
+        return ScrcpyServerListSupport.Parse(result.StdOut)
 
     # --- ADB helpers ---
 
