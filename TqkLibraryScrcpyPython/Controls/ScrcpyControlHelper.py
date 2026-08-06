@@ -2,21 +2,22 @@ import struct
 import io
 import random
 import math
-from typing import List, Union, Callable, Any, Tuple
+from typing import List, Union, Callable, Any, Tuple, Optional
 from collections import namedtuple
 from ..Enums import * # Giả sử các enum đã được import ở đây
 from ..Structs import(
     Rectangle, # Giả sử Rectangle có các thuộc tính x, y, width, height
     Size,
 )
-
-class InvalidRangeException(Exception):
-    pass
+from ..Exceptions import InvalidRangeException
 
 class ScrcpyControlHelper:
     """
     Tương đương với ScrcpyControlHelper.cs
     Giúp tạo các gói lệnh điều khiển nhị phân scrcpy.
+
+    Layout gói bám theo scrcpy 4.0:
+    https://github.com/Genymobile/scrcpy/blob/master/app/src/control_msg.c
     """
 
     # --- Internal Helper for Message Packing ---
@@ -32,14 +33,14 @@ class ScrcpyControlHelper:
         with io.BytesIO() as stream:
             # Viết loại thông báo (1 byte, uint8)
             stream.write(struct.pack('>B', type.value))
-            
+
             for fmt, value in payload_parts:
                 if fmt == 's':
-                    stream.write(value) 
+                    stream.write(value)
                 elif fmt == 'Rectangle':
-                    stream.write(struct.pack('>i', int(value.X))) 
+                    stream.write(struct.pack('>i', int(value.X)))
                     stream.write(struct.pack('>i', int(value.Y)))
-                    stream.write(struct.pack('>H', int(value.Width))) 
+                    stream.write(struct.pack('>H', int(value.Width)))
                     stream.write(struct.pack('>H', int(value.Height)))
                 else:
                     # Đóng gói giá trị số
@@ -60,8 +61,8 @@ class ScrcpyControlHelper:
         """
         if not 0.0 <= f <= 1.0:
             # Đây là logic bảo vệ của Python, nhưng giữ lại check của C#
-            pass 
-        
+            pass
+
         # 0x1p16f là 2^16 = 65536.0
         u = int(f * 65536.0)
         return min(u, 0xFFFF)
@@ -76,7 +77,7 @@ class ScrcpyControlHelper:
 
         # 0x1p15f là 2^15 = 32768.0
         i = int(f * 32768.0)
-        
+
         # Giới hạn giá trị
         i = min(i, 0x7FFF) # Int16 max: 32767
         i = max(i, -32768) # Int16 min: -32768
@@ -111,13 +112,15 @@ class ScrcpyControlHelper:
         if not text:
             raise ValueError("Text cannot be empty or None")
 
-        ascii_text = text.encode('ascii')
+        # scrcpy nhận UTF-8 (C#: Encoding.UTF8.GetBytes). Bản cũ ép 'ascii' nên
+        # mọi ký tự ngoài ASCII đều ném UnicodeEncodeError.
+        utf8_text = text.encode('utf-8')
         # C#: (type, (UInt32)utf8_text.Length, utf8_text)
         # length: UInt32 -> I, text: bytes -> s
         return ScrcpyControlHelper._write_control_message(
             ScrcpyControlType.TYPE_INJECT_TEXT,
-            ('I', len(ascii_text)),
-            ('s', ascii_text)
+            ('I', len(utf8_text)),
+            ('s', utf8_text)
         )
 
     @staticmethod
@@ -145,7 +148,7 @@ class ScrcpyControlHelper:
             ('q', pointer_id),
             ('Rectangle', position),
             ('H', ScrcpyControlHelper.to_unsigned_fixed_point_16(pressure)),
-            ('I', action_button.value), 
+            ('I', action_button.value),
             ('I', buttons.value)
         )
 
@@ -155,11 +158,18 @@ class ScrcpyControlHelper:
         v_scroll: float,
         h_scroll: float,
         button: AndroidMotionEventButton) -> bytes:
-        """TYPE_INJECT_SCROLL_EVENT"""
-        if not (-1.0 <= v_scroll <= 1.0):
-            raise InvalidRangeException("vScroll must be in range -1.0f <= vScroll <= 1.0f")
-        if not (-1.0 <= h_scroll <= 1.0):
-            raise InvalidRangeException("hScroll must be in range -1.0f <= hScroll <= 1.0f")
+        """TYPE_INJECT_SCROLL_EVENT
+
+        scrcpy 3.3+ mở rộng khoảng scroll từ [-1, 1] lên [-16, 16]: giá trị được chia 16 rồi mới
+        đóng thành fixed-point 1.15. Giữ công thức cũ thì scroll nhạy sai 16 lần.
+        """
+        if not (-16.0 <= v_scroll <= 16.0):
+            raise InvalidRangeException("vScroll must be in range -16.0f <= vScroll <= 16.0f")
+        if not (-16.0 <= h_scroll <= 16.0):
+            raise InvalidRangeException("hScroll must be in range -16.0f <= hScroll <= 16.0f")
+
+        h = max(-1.0, min(1.0, h_scroll / 16.0))
+        v = max(-1.0, min(1.0, v_scroll / 16.0))
 
         # C#: (type, position, ToSignedFixedPoint16(hScroll), ToSignedFixedPoint16(vScroll), button)
         # position: Rectangle -> Rectangle (4 x H)
@@ -169,8 +179,8 @@ class ScrcpyControlHelper:
         return ScrcpyControlHelper._write_control_message(
             ScrcpyControlType.TYPE_INJECT_SCROLL_EVENT,
             ('Rectangle', position),
-            ('h', ScrcpyControlHelper.to_signed_fixed_point_16(h_scroll)),
-            ('h', ScrcpyControlHelper.to_signed_fixed_point_16(v_scroll)),
+            ('h', ScrcpyControlHelper.to_signed_fixed_point_16(h)),
+            ('h', ScrcpyControlHelper.to_signed_fixed_point_16(v)),
             ('I', button.value)
         )
 
@@ -193,7 +203,7 @@ class ScrcpyControlHelper:
             ('I', len(utf8_text)),
             ('s', utf8_text)
         )
-    
+
     @staticmethod
     def get_clipboard(copy_key: CopyKey) -> bytes:
         """TYPE_GET_CLIPBOARD"""
@@ -205,13 +215,12 @@ class ScrcpyControlHelper:
         )
 
     @staticmethod
-    def set_screen_power_mode(power_mode: ScrcpyScreenPowerMode) -> bytes:
-        """TYPE_SET_SCREEN_POWER_MODE"""
-        # C#: (type, powerMode)
-        # power_mode (ScrcpyScreenPowerMode): byte -> B
+    def set_display_power(on: bool) -> bytes:
+        """TYPE_SET_DISPLAY_POWER (scrcpy 3.0+, thay TYPE_SET_SCREEN_POWER_MODE của 2.x)"""
+        # C#: (type) rồi WriteByte(on ? 1 : 0)
         return ScrcpyControlHelper._write_control_message(
-            ScrcpyControlType.TYPE_SET_SCREEN_POWER_MODE,
-            ('B', power_mode.value)
+            ScrcpyControlType.TYPE_SET_DISPLAY_POWER,
+            ('B', 1 if on else 0)
         )
 
     @staticmethod
@@ -243,7 +252,7 @@ class ScrcpyControlHelper:
     def rotate_device() -> bytes:
         """TYPE_ROTATE_DEVICE"""
         return ScrcpyControlHelper._create_empty(ScrcpyControlType.TYPE_ROTATE_DEVICE)
-    
+
     @staticmethod
     def open_hard_keyboard_setting() -> bytes:
         """OPEN_HARD_KEYBOARD_SETTINGS"""
@@ -252,15 +261,28 @@ class ScrcpyControlHelper:
     # --- UHID Commands ---
 
     @staticmethod
-    def uhdi_create(id: int, data: bytes) -> bytes:
-        """TYPE_UHID_CREATE"""
-        # C#: (type, id, (UInt16)data.Length, data)
-        # id (UInt16): uint16 -> H
-        # length (UInt16): uint16 -> H
-        # data: bytes -> s
+    def uhdi_create(
+            id: int,
+            data: bytes,
+            name: Optional[str] = None,
+            vendor_id: int = 0,
+            product_id: int = 0) -> bytes:
+        """TYPE_UHID_CREATE
+
+        Layout scrcpy 3.1+: type, id(u16), vendorId(u16), productId(u16), nameLen(u8),
+        name(UTF-8, tối đa 127 byte), dataLen(u16), data.
+        """
+        name_bytes = name.encode('utf-8') if name else b''
+        if len(name_bytes) > 127:
+            name_bytes = name_bytes[:127]
+
         return ScrcpyControlHelper._write_control_message(
             ScrcpyControlType.TYPE_UHID_CREATE,
             ('H', id),
+            ('H', vendor_id),
+            ('H', product_id),
+            ('B', len(name_bytes)),
+            ('s', name_bytes),
             ('H', len(data)),
             ('s', data)
         )
@@ -277,4 +299,75 @@ class ScrcpyControlHelper:
             ('H', id),
             ('H', len(data)),
             ('s', data)
+        )
+
+    @staticmethod
+    def uhid_destroy(id: int) -> bytes:
+        """TYPE_UHID_DESTROY (scrcpy 3.1+)"""
+        return ScrcpyControlHelper._write_control_message(
+            ScrcpyControlType.TYPE_UHID_DESTROY,
+            ('H', id)
+        )
+
+    # --- scrcpy 3.0+ / 4.0 commands ---
+
+    @staticmethod
+    def start_app(name: str) -> bytes:
+        """TYPE_START_APP (scrcpy 3.0+)
+
+        name: tên package, tối đa 255 byte UTF-8. Thêm tiền tố '+' để force-stop app trước khi mở.
+        """
+        if not name:
+            raise ValueError("name cannot be empty or None")
+
+        name_bytes = name.encode('utf-8')
+        if len(name_bytes) > 255:
+            name_bytes = name_bytes[:255]
+
+        return ScrcpyControlHelper._write_control_message(
+            ScrcpyControlType.TYPE_START_APP,
+            ('B', len(name_bytes)),
+            ('s', name_bytes)
+        )
+
+    @staticmethod
+    def reset_video() -> bytes:
+        """TYPE_RESET_VIDEO (scrcpy 3.0+)"""
+        return ScrcpyControlHelper._create_empty(ScrcpyControlType.TYPE_RESET_VIDEO)
+
+    @staticmethod
+    def camera_set_torch(on: bool) -> bytes:
+        """TYPE_CAMERA_SET_TORCH (scrcpy 4.0+)"""
+        return ScrcpyControlHelper._write_control_message(
+            ScrcpyControlType.TYPE_CAMERA_SET_TORCH,
+            ('B', 1 if on else 0)
+        )
+
+    @staticmethod
+    def camera_zoom_in() -> bytes:
+        """TYPE_CAMERA_ZOOM_IN (scrcpy 4.0+)"""
+        return ScrcpyControlHelper._create_empty(ScrcpyControlType.TYPE_CAMERA_ZOOM_IN)
+
+    @staticmethod
+    def camera_zoom_out() -> bytes:
+        """TYPE_CAMERA_ZOOM_OUT (scrcpy 4.0+)"""
+        return ScrcpyControlHelper._create_empty(ScrcpyControlType.TYPE_CAMERA_ZOOM_OUT)
+
+    @staticmethod
+    def resize_display(width: int, height: int) -> bytes:
+        """TYPE_RESIZE_DISPLAY (scrcpy 4.0+)
+
+        Chỉ hợp lệ với display ảo flex (new_display + flex_display=true); server từ chối lệnh
+        resize trên display không phải flex. Server tự giới hạn và debounce nên kích thước áp
+        dụng thực tế có thể khác một chút.
+        """
+        if not (1 <= width <= 65535):
+            raise InvalidRangeException("width must be in range 1..65535")
+        if not (1 <= height <= 65535):
+            raise InvalidRangeException("height must be in range 1..65535")
+
+        return ScrcpyControlHelper._write_control_message(
+            ScrcpyControlType.TYPE_RESIZE_DISPLAY,
+            ('H', width),
+            ('H', height)
         )

@@ -99,8 +99,8 @@ class IControl(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def SetScreenPowerMode(self, power_mode: ScrcpyScreenPowerMode) -> bool:
-        """Thiết lập chế độ nguồn màn hình."""
+    def SetDisplayPower(self, on: bool) -> bool:
+        """Bật/tắt màn hình (scrcpy 3.0+, thay SetScreenPowerMode của 2.x)."""
         pass
 
     @abc.abstractmethod
@@ -131,4 +131,59 @@ class IControl(abc.ABC):
     @abc.abstractmethod
     def OpenHardKeyboardSetting(self) -> bool:
         """Mở cài đặt bàn phím cứng."""
+        pass
+
+    # --- UHID ---
+
+    @abc.abstractmethod
+    def UhidCreate(self, id: int, data: bytes, name: Optional[str] = None,
+                   vendor_id: int = 0, product_id: int = 0) -> bool:
+        """Tạo thiết bị nhập ảo UHID (bàn phím/chuột/gamepad)."""
+        pass
+
+    @abc.abstractmethod
+    def UhidInput(self, id: int, data: bytes) -> bool:
+        """Gửi HID report cho thiết bị UHID đã tạo."""
+        pass
+
+    @abc.abstractmethod
+    def UhidDestroy(self, id: int) -> bool:
+        """Huỷ thiết bị UHID (scrcpy 3.1+)."""
+        pass
+
+    # --- scrcpy 3.0+ / 4.0 ---
+
+    @abc.abstractmethod
+    def StartApp(self, name: str) -> bool:
+        """Mở app theo package name trên thiết bị (scrcpy 3.0+).
+        Thêm tiền tố '+' để force-stop app trước khi mở (vd "+com.example.app")."""
+        pass
+
+    @abc.abstractmethod
+    def ResetVideo(self) -> bool:
+        """Reset/làm mới video stream (scrcpy 3.0+)."""
+        pass
+
+    @abc.abstractmethod
+    def CameraSetTorch(self, on: bool) -> bool:
+        """Bật/tắt đèn flash lúc đang chạy (scrcpy 4.0+). Chỉ có nghĩa khi capture camera."""
+        pass
+
+    @abc.abstractmethod
+    def CameraZoomIn(self) -> bool:
+        """Zoom camera vào một nấc (scrcpy 4.0+). Chỉ có nghĩa khi capture camera."""
+        pass
+
+    @abc.abstractmethod
+    def CameraZoomOut(self) -> bool:
+        """Zoom camera ra một nấc (scrcpy 4.0+). Chỉ có nghĩa khi capture camera."""
+        pass
+
+    @abc.abstractmethod
+    def ResizeDisplay(self, width: int, height: int) -> bool:
+        """Đổi độ phân giải display ảo lúc đang chạy (scrcpy 4.0+).
+
+        Chỉ hợp lệ với display ảo flex (new_display + flex_display=true); server từ chối lệnh
+        resize trên display không phải flex. Server tự giới hạn và debounce nên kích thước áp
+        dụng thực tế có thể khác một chút."""
         pass

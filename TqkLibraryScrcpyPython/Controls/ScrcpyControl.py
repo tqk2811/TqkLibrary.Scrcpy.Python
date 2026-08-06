@@ -5,7 +5,7 @@ from io import BytesIO
 from ctypes import c_void_p, c_int, CFUNCTYPE, cast, POINTER, c_char, string_at
 from .ScrcpyControlHelper import ScrcpyControlHelper, Rectangle, AndroidKeyEventAction, \
     AndroidKeyCode, AndroidKeyEventMeta, AndroidMotionEventAction, \
-    AndroidMotionEventButton, ScrcpyScreenPowerMode, CopyKey
+    AndroidMotionEventButton, CopyKey
 
 from ..Interfaces import(
     IControl,
@@ -72,8 +72,8 @@ class ScrcpyControl(IControl):
     def GetClipboard(self, copy_key: CopyKey) -> bool:
         return self._send_control(self._control_helper.get_clipboard(copy_key))
 
-    def SetScreenPowerMode(self, power_mode: ScrcpyScreenPowerMode) -> bool:
-        return self._send_control(self._control_helper.set_screen_power_mode(power_mode))
+    def SetDisplayPower(self, on: bool) -> bool:
+        return self._send_control(self._control_helper.set_display_power(on))
 
     def BackOrScreenOn(self, key_event_action: AndroidKeyEventAction) -> bool:
         return self._send_control(self._control_helper.back_or_screen_on(key_event_action))
@@ -92,6 +92,41 @@ class ScrcpyControl(IControl):
 
     def OpenHardKeyboardSetting(self) -> bool:
         return self._send_control(self._control_helper.open_hard_keyboard_setting())
+
+    # --- UHID ---
+
+    def UhidCreate(self, id: int, data: bytes, name: Optional[str] = None,
+                   vendor_id: int = 0, product_id: int = 0) -> bool:
+        return self._send_control(
+            self._control_helper.uhdi_create(id, data, name, vendor_id, product_id))
+
+    def UhidInput(self, id: int, data: bytes) -> bool:
+        return self._send_control(self._control_helper.uhdi_input(id, data))
+
+    def UhidDestroy(self, id: int) -> bool:
+        return self._send_control(self._control_helper.uhid_destroy(id))
+
+    # --- scrcpy 3.0+ / 4.0 ---
+
+    def StartApp(self, name: str) -> bool:
+        """Mở app theo package name. Thêm tiền tố '+' để force-stop trước khi mở."""
+        return self._send_control(self._control_helper.start_app(name))
+
+    def ResetVideo(self) -> bool:
+        return self._send_control(self._control_helper.reset_video())
+
+    def CameraSetTorch(self, on: bool) -> bool:
+        return self._send_control(self._control_helper.camera_set_torch(on))
+
+    def CameraZoomIn(self) -> bool:
+        return self._send_control(self._control_helper.camera_zoom_in())
+
+    def CameraZoomOut(self) -> bool:
+        return self._send_control(self._control_helper.camera_zoom_out())
+
+    def ResizeDisplay(self, width: int, height: int) -> bool:
+        """Chỉ dùng được với display ảo flex (new_display + flex_display=true)."""
+        return self._send_control(self._control_helper.resize_display(width, height))
 
 
 
