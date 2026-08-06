@@ -2,33 +2,29 @@
 from .ScrcpyServerConfig import ScrcpyServerConfig
 from .ScrcpyNativeConfig import ScrcpyNativeConfig
 from .ScrcpyDeployConfig import ScrcpyDeployConfig
+from .ClientConfig import ClientConfig
 from .AudioConfig import AudioConfig
-from ..Enums.FFmpegAVHWDeviceType import FFmpegAVHWDeviceType
-from ..Enums.D3D11Filter import D3D11Filter
 
 
 class ScrcpyConfig:
+    """Config cấp cao nhất, gom 3 nhóm tách bạch:
+
+    - ServerConfig : tham số gửi cho scrcpy server chạy trên thiết bị
+    - DeployConfig : cách tới được thiết bị (adb, jar, timeout kết nối)
+    - ClientConfig : giải mã/render phía PC
+    """
 
     def __init__(self):
         self.ServerConfig: ScrcpyServerConfig = ScrcpyServerConfig()
 
-        # adb ở đâu, đẩy jar nào, jar nằm ở đâu trên thiết bị. Cũng là nguồn duy nhất của
-        # đường dẫn adb dùng khi connect (reverse tunnel, chạy server) nên client và deploy
+        # Mọi thứ để tới được thiết bị: adb ở đâu, đẩy jar nào, jar nằm ở đâu trên thiết bị,
+        # có push lại mỗi lần Connect hay không, và chờ kết nối bao lâu. Cũng là nguồn duy nhất
+        # của đường dẫn adb dùng khi connect (reverse tunnel, chạy server) nên client và deploy
         # không thể lệch nhau. Truyền chính instance này vào Scrcpy.PushServer() khi push tay.
         self.DeployConfig: ScrcpyDeployConfig = ScrcpyDeployConfig()
 
-        # Push jar lên thiết bị mỗi lần Connect. Jar nằm lại trên máy giữa các lần kết nối nên
-        # push lại chỉ tốn thời gian. Đặt False để reconnect nhanh hơn — khi đó người gọi tự
-        # chịu trách nhiệm jar đã có sẵn ở ScrcpyServerAndroidPath (gọi PushServer() một lần),
-        # nếu không server không chạy được và Connect thất bại.
-        self.ForcePush: bool = True
-
-        self.ConnectionTimeout: int = 3000
-        self.HwType: FFmpegAVHWDeviceType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_NONE
-        self.Filter: D3D11Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
-        self.IsUseD3D11ForUiRender: bool = False
-        self.IsUseD3D11ForConvert: bool = False
-        self.IsForceUiGpuFlush: bool = True
+        # Tuỳ chọn giải mã/render phía client, không gửi gì xuống thiết bị.
+        self.ClientConfig: ClientConfig = ClientConfig()
 
     def __str__(self) -> str:
         if self.ServerConfig is None:
@@ -38,7 +34,12 @@ class ScrcpyConfig:
     def NativeConfig(self) -> ScrcpyNativeConfig:
         if self.ServerConfig is None:
             self.ServerConfig = ScrcpyServerConfig()
+        if self.DeployConfig is None:
+            self.DeployConfig = ScrcpyDeployConfig()
+        if self.ClientConfig is None:
+            self.ClientConfig = ClientConfig()
         server_config = self.ServerConfig
+        client_config = self.ClientConfig
 
         if server_config.AudioConfig is None:
             server_config.AudioConfig = AudioConfig()
@@ -50,13 +51,13 @@ class ScrcpyConfig:
             raise ValueError("At least one stream (video, audio, control) must be enabled.")
 
         return ScrcpyNativeConfig(
-            HwType=self.HwType.value,
+            HwType=client_config.HwType.value,
             IsControl=is_control,
-            IsUseD3D11ForUiRender=self.IsUseD3D11ForUiRender,
-            IsUseD3D11ForConvert=self.IsUseD3D11ForConvert,
+            IsUseD3D11ForUiRender=client_config.IsUseD3D11ForUiRender,
+            IsUseD3D11ForConvert=client_config.IsUseD3D11ForConvert,
             IsAudio=is_audio,
             IsVideo=is_video,
-            ConnectionTimeout=self.ConnectionTimeout,
-            Filter=self.Filter.value,
-            IsForceUiGpuFlush=int(bool(self.IsForceUiGpuFlush)),
+            ConnectionTimeout=self.DeployConfig.ConnectionTimeout,
+            Filter=client_config.Filter.value,
+            IsForceUiGpuFlush=int(bool(client_config.IsForceUiGpuFlush)),
         )

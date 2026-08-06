@@ -162,13 +162,19 @@ Tách đường dẫn [adb](Glossary-vi.md#L5) / jar ra class riêng. Tạo
 | `AdbPath` | `"adb.exe"` |
 | `ScrcpyServerPath` | `"scrcpy-server.jar"` |
 | `ScrcpyServerAndroidPath` | `"/sdcard/scrcpy-server-tqk-{ver}.jar"` |
+| `ForcePush` | `True` |
+| `ConnectionTimeout` | `3000` |
 | `GetResolvedAndroidPath()` | thay `{ver}` bằng version server |
 
 Kèm `TqkLibraryScrcpyPython/Constant.py` (mirror `Constant.cs`: `ScrcpyServerVersion`,
 `ScrcpyServerAndroidPath`) để version chỉ khai báo ở một chỗ.
 
-**Breaking:** `ScrcpyConfig.AdbPath` / `ScrcpyConfig.ScrcpyServerPath` bỏ đi, chuyển vào
-`ScrcpyConfig.DeployConfig`.
+`ScrcpyConfig` sau đó gom về đúng 3 nhóm: `ServerConfig` (tham số gửi server), `DeployConfig`
+(cách tới thiết bị) và `ClientConfig` (giải mã/render phía PC: `HwType`, `Filter`,
+`IsUseD3D11ForUiRender`, `IsUseD3D11ForConvert`, `IsForceUiGpuFlush`). C# branch `2.4` đổi y hệt.
+
+**Breaking:** `ScrcpyConfig.AdbPath` / `ScrcpyServerPath` / `ConnectionTimeout` / `ForcePush` chuyển
+vào `ScrcpyConfig.DeployConfig`; 5 tuỳ chọn D3D11/HW chuyển vào `ScrcpyConfig.ClientConfig`.
 
 ### `1f009a0` — `PushServer` + `ForcePush`
 
@@ -176,8 +182,8 @@ Kèm `TqkLibraryScrcpyPython/Constant.py` (mirror `Constant.cs`: `ScrcpyServerVe
   [Scrcpy.py:163-167](../TqkLibraryScrcpyPython/Scrcpy.py#L163-L167) đang **hardcode**
   `/sdcard/scrcpy-server-tqk.jar` ở cả lệnh push lẫn `CLASSPATH` → thay bằng `GetResolvedAndroidPath()`.
 - Thêm `Scrcpy.PushServer(deployConfig=None) -> bool`.
-- Thêm `ScrcpyConfig.ForcePush = True`; khi `False` thì `Connect` bỏ qua bước push (reconnect nhanh hơn,
-  người gọi tự chịu trách nhiệm jar đã có trên máy).
+- Thêm `ScrcpyDeployConfig.ForcePush = True`; khi `False` thì `Connect` bỏ qua bước push (reconnect
+  nhanh hơn, người gọi tự chịu trách nhiệm jar đã có trên máy).
 - [Scrcpy.py:120](../TqkLibraryScrcpyPython/Scrcpy.py#L120) `self._adbPath = config.AdbPath` → `config.DeployConfig.AdbPath`.
 
 ---

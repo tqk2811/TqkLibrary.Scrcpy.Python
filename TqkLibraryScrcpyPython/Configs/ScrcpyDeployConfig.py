@@ -22,6 +22,16 @@ class ScrcpyDeployConfig:
         # Đường dẫn jar trên thiết bị, cũng là path Connect() chạy server từ đó.
         self.ScrcpyServerAndroidPath: str = Constant.ScrcpyServerAndroidPath
 
+        # Push ScrcpyServerPath lên thiết bị mỗi lần Connect. Jar nằm lại trên máy giữa các lần
+        # kết nối nên push lại chỉ tốn thời gian. Đặt False để reconnect nhanh hơn — khi đó người
+        # gọi tự chịu trách nhiệm jar đã có sẵn ở ScrcpyServerAndroidPath (gọi
+        # Scrcpy.PushServer() một lần, vd ở lần connect đầu), nếu không server không chạy được
+        # và Connect thất bại.
+        self.ForcePush: bool = True
+
+        # Thời gian (ms) chờ thiết bị kết nối tới trước khi bỏ cuộc.
+        self.ConnectionTimeout: int = 3000
+
     def GetResolvedAndroidPath(self) -> str:
         """ScrcpyServerAndroidPath với {ver} đã thay — path thật trên thiết bị."""
         return self.ScrcpyServerAndroidPath.replace("{ver}", Constant.ScrcpyServerVersion)

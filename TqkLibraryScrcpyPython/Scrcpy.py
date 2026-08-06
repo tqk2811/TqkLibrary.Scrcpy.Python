@@ -115,7 +115,7 @@ class Scrcpy(IScrcpy):
     def PushServer(self, config: Optional[ScrcpyDeployConfig] = None) -> bool:
         """Đẩy scrcpy-server.jar lên thiết bị.
 
-        Dùng khi đặt ScrcpyConfig.ForcePush = False để bỏ push ở mỗi lần Connect: gọi hàm này
+        Dùng khi đặt ScrcpyDeployConfig.ForcePush = False để bỏ push ở mỗi lần Connect: gọi hàm này
         một lần (vd lần connect đầu tiên). Truyền chính ScrcpyConfig.DeployConfig của config
         dùng để Connect để cả hai thống nhất đường dẫn.
         """
@@ -167,7 +167,7 @@ class Scrcpy(IScrcpy):
         # Setup ADB tunnel + push server jar
         # Bỏ qua lỗi của reverse --remove (rule có thể chưa tồn tại)
         self._run_adb_sync(deploy_config.AdbPath, ["-s", self._deviceId, "reverse", "--remove", scid_prefix])
-        if config.ForcePush and not self._push_server_internal(deploy_config, scrcpy_server_android_path):
+        if deploy_config.ForcePush and not self._push_server_internal(deploy_config, scrcpy_server_android_path):
             listener.close()
             return False
         if self._run_adb_sync(

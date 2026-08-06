@@ -19,17 +19,19 @@ DEVICE_ID = "a29bc285"
 
 async def main():
     scrcpyConfig = ScrcpyConfig()
-    scrcpyConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
-    scrcpyConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA
-    scrcpyConfig.IsUseD3D11ForConvert = True
-    scrcpyConfig.IsUseD3D11ForUiRender = True  # bắt buộc khi IsUseD3D11ForConvert=True (DLL không validate, sẽ crash nếu thiếu)
-    scrcpyConfig.ConnectionTimeout = 10000
 
-    # adb + jar giờ nằm trong DeployConfig (breaking change so với 2.4)
+    # tuỳ chọn giải mã/render phía PC giờ nằm trong ClientConfig (breaking change so với 2.4)
+    scrcpyConfig.ClientConfig.Filter = D3D11Filter.D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT
+    scrcpyConfig.ClientConfig.HwType = FFmpegAVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA
+    scrcpyConfig.ClientConfig.IsUseD3D11ForConvert = True
+    scrcpyConfig.ClientConfig.IsUseD3D11ForUiRender = True  # bắt buộc khi IsUseD3D11ForConvert=True (DLL không validate, sẽ crash nếu thiếu)
+
+    # adb, jar, timeout kết nối giờ nằm trong DeployConfig (breaking change so với 2.4)
     scrcpyConfig.DeployConfig.AdbPath = "adb.exe"  # dùng adb trong PATH
     scrcpyConfig.DeployConfig.ScrcpyServerPath = JAR_PATH
+    scrcpyConfig.DeployConfig.ConnectionTimeout = 10000
     # Đặt False để bỏ push mỗi lần Connect (phải tự gọi scrcpy.PushServer() một lần trước đó)
-    scrcpyConfig.ForcePush = True
+    scrcpyConfig.DeployConfig.ForcePush = True
 
     scrcpyConfig.ServerConfig = ScrcpyServerConfig()
     scrcpyConfig.ServerConfig.IsControl = True

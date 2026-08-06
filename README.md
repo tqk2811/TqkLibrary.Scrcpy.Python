@@ -39,8 +39,8 @@ Xem thêm [test.py](test.py) (`py test.py` để mirror, `py test.py list` để
 Jar nằm lại trên thiết bị giữa các lần kết nối nên push lại chỉ tốn thời gian:
 
 ```python
-scrcpy.PushServer(config.DeployConfig)   # gọi một lần
-config.ForcePush = False                 # các lần Connect sau bỏ qua push
+scrcpy.PushServer(config.DeployConfig)      # gọi một lần
+config.DeployConfig.ForcePush = False       # các lần Connect sau bỏ qua push
 ```
 
 ### Query hỗ trợ của thiết bị
@@ -61,6 +61,8 @@ Bản này **không giữ alias tương thích ngược** — bám sát API củ
 |---|---|---|
 | `ScrcpyConfig.AdbPath` | `ScrcpyConfig.DeployConfig.AdbPath` | |
 | `ScrcpyConfig.ScrcpyServerPath` | `ScrcpyConfig.DeployConfig.ScrcpyServerPath` | |
+| `ScrcpyConfig.ConnectionTimeout` | `ScrcpyConfig.DeployConfig.ConnectionTimeout` | |
+| `ScrcpyConfig.HwType` / `Filter` / `IsUseD3D11ForUiRender` / `IsUseD3D11ForConvert` / `IsForceUiGpuFlush` | `ScrcpyConfig.ClientConfig.*` | gom tuỳ chọn giải mã/render phía PC |
 | `ScrcpyConfig.GpuThreadX` / `GpuThreadY` | *(bỏ)* | struct native đã bỏ 2 field này |
 | `Control.SetScreenPowerMode(mode)` | `Control.SetDisplayPower(on: bool)` | |
 | `ScrcpyScreenPowerMode` | *(bỏ)* | |

@@ -11,6 +11,7 @@ __all__ = [
     "AndroidConfig",
     "AudioConfig",
     "CameraConfig",
+    "ClientConfig",
     "ScrcpyConfig",
     "ScrcpyDeployConfig",
     "ScrcpyNativeConfig",
